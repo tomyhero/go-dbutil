@@ -15,18 +15,18 @@ type Model interface {
 	GetPrimaryKeys() []string
 }
 
-// Database Hundle ロジッククラス
-type Hundle struct {
+// Database Handle ロジッククラス
+type Handle struct {
 	// database conn
 	Conn cpool.Conn
 }
 
-func NewHundle(conn cpool.Conn) Hundle {
-	return Hundle{Conn: conn}
+func NewHandle(conn cpool.Conn) Handle {
+	return Handle{Conn: conn}
 }
 
 // insert処理、last inserted idを返却する
-func (self *Hundle) InsertX(obj Model, values map[string]interface{}) int {
+func (self *Handle) InsertX(obj Model, values map[string]interface{}) int {
 
 	//values["created_at"] = sq.Expr("NOW()")
 	//values["updated_at"] = sq.Expr("NOW()")
@@ -63,7 +63,7 @@ func (self *Hundle) InsertX(obj Model, values map[string]interface{}) int {
 }
 
 // PKからレコードを取得し、objに格納する
-func (self *Hundle) LookupX(obj Model, ids ...interface{}) bool {
+func (self *Handle) LookupX(obj Model, ids ...interface{}) bool {
 	b := sq.Select(obj.GetFields()).From(obj.GetTable())
 
 	for i, field := range obj.GetPrimaryKeys() {
@@ -96,7 +96,7 @@ func (self *Hundle) LookupX(obj Model, ids ...interface{}) bool {
 }
 
 // lookup() + ロック
-func (self *Hundle) LookupForUpdateX(obj Model, ids ...interface{}) bool {
+func (self *Handle) LookupForUpdateX(obj Model, ids ...interface{}) bool {
 	b := sq.Select(obj.GetFields()).From(obj.GetTable())
 
 	for i, field := range obj.GetPrimaryKeys() {
@@ -130,7 +130,7 @@ func (self *Hundle) LookupForUpdateX(obj Model, ids ...interface{}) bool {
 }
 
 // 1 recordのscan、格納
-func (self *Hundle) RowScan(obj Model, row *sql.Row) error {
+func (self *Handle) RowScan(obj Model, row *sql.Row) error {
 	err := row.Scan(obj.FieldHolder()...)
 
 	if err == sql.ErrNoRows {
@@ -144,7 +144,7 @@ func (self *Hundle) RowScan(obj Model, row *sql.Row) error {
 }
 
 // 複数recordのscan、格納 rowsのClose処理も行う
-func (self *Hundle) RowsScan(i interface{}, rows *sql.Rows) {
+func (self *Handle) RowsScan(i interface{}, rows *sql.Rows) {
 	iv := reflect.ValueOf(i).Elem()
 	it := reflect.TypeOf(i).Elem().Elem().Elem()
 

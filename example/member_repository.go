@@ -6,7 +6,7 @@ import (
 )
 
 func NewMember(conn cpool.Conn) *Member {
-	return &Member{Hundle: repository.NewHundle(conn)}
+	return &Member{Handle: repository.NewHandle(conn)}
 }
 
 func (self *Member) GetTable() string {

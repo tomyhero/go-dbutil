@@ -7,5 +7,5 @@ import (
 type Member struct {
 	MemberID int
 	Name     string
-	repository.Hundle
+	repository.Handle
 }
