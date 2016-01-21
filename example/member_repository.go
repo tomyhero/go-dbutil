@@ -1,6 +1,7 @@
 package example
 
 import (
+	sq "github.com/Masterminds/squirrel"
 	"github.com/tomyhero/go-dbutil/cpool"
 	"github.com/tomyhero/go-dbutil/repository"
 )
@@ -40,8 +41,9 @@ func (self *Member) Insert(name string) int {
 }
 
 func (self *Member) Search() []*Member {
-	rows, _ := self.Conn.Query("SELECT " + self.GetFields() + " FROM member limit 2")
 	objs := []*Member{}
-	self.RowsScan(&objs, rows)
+	self.SearchX(&objs, func(sb sq.SelectBuilder) sq.SelectBuilder {
+		return sb
+	})
 	return objs
 }

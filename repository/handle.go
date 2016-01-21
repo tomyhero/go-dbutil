@@ -129,6 +129,23 @@ func (self *Handle) LookupForUpdateX(obj Model, ids ...interface{}) bool {
 	return true
 }
 
+func (self *Handle) SearchX(i interface{}, buildFn func(sq.SelectBuilder) sq.SelectBuilder) {
+	obj := reflect.New(reflect.TypeOf(i).Elem().Elem().Elem()).Interface().(Model)
+	//rows, err := self.Conn.Query("SELECT " + obj.GetFields() + " FROM " + obj.GetTable())
+	b := sq.Select(obj.GetFields()).From(obj.GetTable())
+	b = buildFn(b)
+	rows, err := b.RunWith(self.Conn).Query()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"err":   err,
+		}).Panic("Fail to SearchX()")
+	}
+
+	self.RowsScan(i, rows)
+}
+
 // 1 recordのscan、格納
 func (self *Handle) RowScan(obj Model, row *sql.Row) error {
 	err := row.Scan(obj.FieldHolder()...)
