@@ -62,6 +62,32 @@ func (self *Handle) InsertX(obj Model, values map[string]interface{}) int {
 	return int(lastID)
 }
 
+func (self *Handle) RetrieveX(obj Model, buildFn func(sq.SelectBuilder) sq.SelectBuilder) bool {
+	b := sq.Select(obj.GetFields()).From(obj.GetTable())
+	b = buildFn(b)
+	s, args, err := b.ToSql()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"err":   err,
+		}).Panic("Fail To Build RetrieveX SQL")
+	}
+
+	row := self.Conn.QueryRow(s, args...)
+	err = self.RowScan(obj, row)
+
+	if err == sql.ErrNoRows {
+		return false
+	} else if err != nil {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"err":   err,
+		}).Panic("Fail to RetrieveX()")
+	}
+	return true
+}
+
 // PKからレコードを取得し、objに格納する
 func (self *Handle) LookupX(obj Model, ids ...interface{}) bool {
 	b := sq.Select(obj.GetFields()).From(obj.GetTable())
