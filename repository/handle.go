@@ -25,6 +25,34 @@ func NewHandle(conn cpool.Conn) Handle {
 	return Handle{Conn: conn}
 }
 
+func (self *Handle) UpdateX(obj Model, values map[string]interface{}, buildFn func(sq.UpdateBuilder) sq.UpdateBuilder) int {
+
+	b := sq.Update(obj.GetTable()).SetMap(values)
+	b = buildFn(b)
+
+	s, args, err := b.ToSql()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"table":  obj.GetTable(),
+			"values": values,
+			"err":    err,
+		}).Panic("Fail To Build Update SQL")
+	}
+
+	res, err := self.Conn.Exec(s, args...)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"table":  obj.GetTable(),
+			"values": values,
+			"err":    err,
+		}).Panic("Fail To Execute Update SQL")
+	}
+
+	i, _ := res.RowsAffected()
+
+	return int(i)
+}
+
 // insert処理、last inserted idを返却する
 func (self *Handle) InsertX(obj Model, values map[string]interface{}) int {
 
