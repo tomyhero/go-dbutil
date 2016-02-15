@@ -202,27 +202,38 @@ func (self *Handle) SearchX(i interface{}, buildFn func(sq.SelectBuilder) sq.Sel
 
 // 1 recordのscan、格納
 func (self *Handle) RowScan(obj Model, row *sql.Row) error {
-	err := row.Scan(obj.FieldHolder()...)
-
-	if err == sql.ErrNoRows {
-		return err
-	} else if err != nil {
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Panic("Fail at rowScan()")
-	}
-	return nil
+	return self.RowScanX(obj, row, func(obj Model, row *sql.Row) error {
+		return row.Scan(obj.FieldHolder()...)
+	})
 }
 
 // 複数recordのscan、格納 rowsのClose処理も行う
 func (self *Handle) RowsScan(i interface{}, rows *sql.Rows) {
+	self.RowsScanX(i, rows, func(obj Model, rows *sql.Rows) {
+		rows.Scan(obj.FieldHolder()...)
+	})
+}
+
+func (self *Handle) RowScanX(obj Model, row *sql.Row, buildFn func(Model, *sql.Row) error) error {
+	err := buildFn(obj, row)
+	if err == sql.ErrNoRows {
+		return err
+	} else if err != nil {
+		log.WithFields(log.Fields{
+			"err":   err,
+			"table": obj.GetTable(),
+		}).Panic("Fail at RowScanX()")
+	}
+	return nil
+}
+
+func (self *Handle) RowsScanX(i interface{}, rows *sql.Rows, buildFn func(Model, *sql.Rows)) {
 	iv := reflect.ValueOf(i).Elem()
 	it := reflect.TypeOf(i).Elem().Elem().Elem()
-
 	defer rows.Close()
 	for rows.Next() {
 		obj := reflect.New(it).Interface().(Model)
-		rows.Scan(obj.FieldHolder()...)
+		buildFn(obj, rows)
 		iv.Set(reflect.Append(iv, reflect.ValueOf(obj)))
 	}
 }
