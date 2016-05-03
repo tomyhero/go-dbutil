@@ -183,6 +183,36 @@ func (self *Handle) LookupForUpdateX(obj Model, ids ...interface{}) bool {
 	return true
 }
 
+func (self *Handle) CountX(obj Model, buildFn func(sq.SelectBuilder) sq.SelectBuilder) int {
+	b := sq.Select("count(*)").From(obj.GetTable())
+	b = buildFn(b)
+	s, args, err := b.ToSql()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"err":   err,
+		}).Panic("Fail To Build CountX SQL")
+	}
+
+	count := 0
+	err = self.Conn.QueryRow(s, args...).Scan(&count)
+
+	if err == sql.ErrNoRows {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"err":   err,
+		}).Panic("Fail To Get Count SQL")
+	} else if err != nil {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"err":   err,
+		}).Panic("Fail to CountX()")
+	}
+
+	return count
+}
+
 func (self *Handle) SearchX(i interface{}, buildFn func(sq.SelectBuilder) sq.SelectBuilder) {
 	obj := reflect.New(reflect.TypeOf(i).Elem().Elem().Elem()).Interface().(Model)
 	//rows, err := self.Conn.Query("SELECT " + obj.GetFields() + " FROM " + obj.GetTable())
