@@ -2,10 +2,11 @@ package repository
 
 import (
 	"database/sql"
+	"reflect"
+
 	sq "github.com/Masterminds/squirrel"
 	log "github.com/Sirupsen/logrus"
 	"github.com/tomyhero/go-dbutil/cpool"
-	"reflect"
 )
 
 type Model interface {
@@ -23,6 +24,34 @@ type Handle struct {
 
 func NewHandle(conn cpool.Conn) Handle {
 	return Handle{Conn: conn}
+}
+
+func (self *Handle) DeleteX(obj Model, buildFn func(sq.DeleteBuilder) sq.DeleteBuilder) int {
+
+	b := sq.Delete(obj.GetTable())
+	b = buildFn(b)
+	s, args, err := b.ToSql()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"args":  args,
+			"err":   err,
+		}).Panic("Fail To Build DELETE SQL")
+	}
+
+	res, err := self.Conn.Exec(s, args...)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"table": obj.GetTable(),
+			"args":  args,
+			"err":   err,
+		}).Panic("Fail To Execute DELTE SQL")
+	}
+
+	i, _ := res.RowsAffected()
+
+	return int(i)
 }
 
 func (self *Handle) UpdateX(obj Model, values map[string]interface{}, buildFn func(sq.UpdateBuilder) sq.UpdateBuilder) int {

@@ -1,9 +1,10 @@
 package cpool
 
 import (
+	"testing"
+
 	"github.com/lestrrat/go-test-mysqld"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestPing(t *testing.T) {
